@@ -3,4 +3,5 @@
 Instructions:
 
 mkdir data
+
 python download_images.py
