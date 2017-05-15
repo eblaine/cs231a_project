@@ -6,15 +6,29 @@ import matplotlib.pyplot as plt
 import numpy as np
 from six.moves import cPickle as pickle
 import platform
+from sys import stdout 
+
+stdout.flush()
 
 client = pymongo.MongoClient()
 db = client.rijks
-n = 10
+n = 10000
 currIndex = 0
 currBatch = 0
 datadict = {'data': np.zeros(shape=(n, 3, 256, 256)), 'labels': []}
 filename_base = 'data/data_batch_'
 
+'''
+resize_image
+
+Downsamples and crops img to 256 x 256
+
+params: img - rgb array for the a raw image from Rijksmuseum collection 
+
+returns:
+center_crop - img, resized and cropped to 256
+resized - original image, resized s.t. the longer side is length 256
+'''
 def resize_image(img):
 	# get shape of image
 	H, W, C = img.shape
@@ -63,6 +77,16 @@ def resize_image(img):
 
 
 # utility function for later!
+'''
+get_rgb:
+
+Downloads image located at url and returns the full rgb array (normalized)
+
+params: url - location of full image 
+returns:
+1. 256 x 256 crop of image
+2. rectangular resized image (one side is length 256)
+'''
 def get_rgb(url):
 	try:	
 		r = requests.get(url)
@@ -75,6 +99,14 @@ def get_rgb(url):
 
 	return crop / 256., small_image / 256.
 
+
+'''
+save_image
+
+Mostly leftover from mongo, but adds data and labels to final data output
+
+currIndex - current data point number
+'''
 def save_image(cropped, resized, obj_id, currIndex):
 	# try: 
 	# 	db.images.insert({'obj_id': obj_id, 'cropped': cropped, 'downsampled': resized})
@@ -89,6 +121,12 @@ def save_image(cropped, resized, obj_id, currIndex):
 	datadict['data'][currIndex, :, :, :] = cropped.transpose(2, 0, 1)
 	datadict['labels'].append(obj_id)
 
+
+'''
+load_pickle
+
+Returns saved data in f as a dictionary
+'''
 def load_pickle(f):
     version = platform.python_version_tuple()
     if version[0] == '2':
@@ -97,11 +135,18 @@ def load_pickle(f):
         return  pickle.load(f, encoding='latin1')
     raise ValueError("invalid python version: {}".format(version))
 
+'''
+pickle_and_next_batch
+
+Saves current datadict to a .pkl (scheme is data/data_batch_<currBatch>)
+'''
 def pickle_and_next_batch(currBatch):
 	f = open(filename_base + str(currBatch), 'w')
 	pickle.dump(datadict, f)
 	f.close()
 
+
+# JUST A QUICK TEST...not used now
 def load_batch_test(filename):
 	with open(filename, 'rb') as f:
 		datadict = load_pickle(f)
@@ -111,21 +156,37 @@ def load_batch_test(filename):
 		X = X.transpose(0, 3, 1, 2) # N H W C --> N C H W	
 		return X, Y
 
-
-for painting_json in db.art.find():
-	url = painting_json.get('url')
-	if url != '':
+# loop over file of urls and obj_id's to save RGB arrays
+with open('painting_urls.tsv', 'r') as f:
+	for line in f:
+		obj_id, url = line.strip().split('\t')
 		img = get_rgb(url)
-		if img == []:
-			continue
-		cropped, resized = img
+		cropped, resized = img 
 		if currIndex >= n:
 			pickle_and_next_batch(currBatch)
 			currBatch += 1
 			currIndex = 0
-			print currBatch
 
-		save_image(cropped, resized, painting_json.get('obj_id'), currIndex)
-		currIndex += 1
+
+		save_image(cropped, resized, obj_id, currIndex)
+		currIndex += 1	
+		stdout.flush()	
+
+# leftover from mongo
+# for painting_json in db.art.find():
+# 	url = painting_json.get('url')
+# 	if url != '':
+# 		img = get_rgb(url)
+# 		if img == []:
+# 			continue
+# 		cropped, resized = img
+# 		if currIndex >= n:
+# 			pickle_and_next_batch(currBatch)
+# 			currBatch += 1
+# 			currIndex = 0
+# 			print currBatch
+
+# 		save_image(cropped, resized, painting_json.get('obj_id'), currIndex)
+# 		currIndex += 1
 		
 			

@@ -110,14 +110,18 @@ def get_painting_json():
 # save_images()
 
 # some shit i wrote to make sure uniqueness was enforced (it was)
-# obj_ids = set()
-# urls = set()
-# num_processed = 0
-# num_with_url = 0
-# for painting in db.art.find():
-# 	obj_id = painting['obj_id']
-# 	url = painting['url']
-# 	if url != '':
+obj_ids = set()
+urls = set()
+num_processed = 0
+num_with_url = 0
+outfile = open('painting_urls.tsv', 'w')
+for painting in db.art.find():
+	obj_id = painting['obj_id']
+	url = painting['url']
+	if url != '':
+		outfile.write(obj_id + '\t' + url + '\n')
+outfile.close()
+
 # 		num_with_url += 1
 # print num_with_url
 	# if url in urls or obj_id in obj_ids:
