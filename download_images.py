@@ -1,8 +1,6 @@
-import pymongo
 import requests
 from scipy import ndimage, misc
 from io import BytesIO
-import matplotlib.pyplot as plt
 import numpy as np
 from six.moves import cPickle as pickle
 import platform
