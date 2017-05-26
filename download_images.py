@@ -8,8 +8,8 @@ from sys import stdout
 
 stdout.flush()
 
-client = pymongo.MongoClient()
-db = client.rijks
+# client = pymongo.MongoClient()
+# db = client.rijks
 n = 10000
 currIndex = 0
 currBatch = 0
