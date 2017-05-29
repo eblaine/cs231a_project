@@ -10,12 +10,9 @@ import gzip
 
 stdout.flush()
 
-# client = pymongo.MongoClient()
-# db = client.rijks
 n = 10000
 currIndex = 0
 currBatch = 0
-# datadict = {'data': np.zeros(shape=(n, 3, 256, 256)), 'labels': []}
 datadict = {'data': [], 'labels': []}
 filename_base = 'data/data_batch_'
 
@@ -45,18 +42,12 @@ def resize_image(img):
 	else: 
 		shape = (256, int(256 * ratio))
 
-	# resized = misc.imresize(img, shape)
 	resized = img.resize(shape, Image.ANTIALIAS)
 
 	# crop larger dimension using middle 256 elements
-	# re_H, re_W, re_c = resized.shape
 	re_W, re_H = resized.size
-	# print 'resized', re_H, re_W
-
-	#row_start_index = re_H/2 - 128
-	#col_start_index = re_W/2 - 128
+	
 	center_x, center_y = (re_W / 2, re_H / 2)
-	# print 'center indices', center_x, center_y
 	left_side = center_x - 128
 	right_side = center_x + 128
 	top = center_y - 128
@@ -66,7 +57,7 @@ def resize_image(img):
 	center_crop = resized.crop(cropped_bounding_box)
 
 	return center_crop, resized
-
+	
 
 # utility function for later!
 '''
@@ -85,13 +76,10 @@ def get_rgb(url):
 		r = requests.get(url, stream=True)
 	except requests.exceptions.ConnectionError:
 		return []
-	
-	# full image, needs downsampling to 256 x 256
-	# full_image = ndimage.imread(BytesIO(r.content))
+
 	full_image = Image.open(r.raw)
 	crop, small_image = resize_image(full_image)
 
-	# return crop / 256., small_image / 256.
 	return crop, small_image
 
 
@@ -103,17 +91,7 @@ Mostly leftover from mongo, but adds data and labels to final data output
 currIndex - current data point number
 '''
 def save_image(cropped, resized, obj_id, currIndex):
-	# try: 
-	# 	db.images.insert({'obj_id': obj_id, 'cropped': cropped, 'downsampled': resized})
-	# except pymongo.errors.DuplicateKeyError:
-	# 	return
-	# plt.imshow(resized)
-	# plt.show()
-
 	# save as N x C x H x W
-
-
-	# datadict['data'][currIndex, :, :, :] = cropped.transpose(2, 0, 1)
 	datadict['data'].append(cropped)
 	datadict['labels'].append(obj_id)
 
@@ -163,26 +141,8 @@ with open('painting_urls.tsv', 'r') as f:
 			currBatch += 1
 			currIndex = 0
 
-
 		save_image(cropped, resized, obj_id, currIndex)
 		currIndex += 1	
 		stdout.flush()	
-
-# leftover from mongo
-# for painting_json in db.art.find():
-# 	url = painting_json.get('url')
-# 	if url != '':
-# 		img = get_rgb(url)
-# 		if img == []:
-# 			continue
-# 		cropped, resized = img
-# 		if currIndex >= n:
-# 			pickle_and_next_batch(currBatch)
-# 			currBatch += 1
-# 			currIndex = 0
-# 			print currBatch
-
-# 		save_image(cropped, resized, painting_json.get('obj_id'), currIndex)
-# 		currIndex += 1
 		
 			
